@@ -46,13 +46,14 @@ func (podcast *Podcast) Sync(config Config) error {
 	if podcast.Start == "" {
 		podcast.Start = "oldest"
 	}
+	log.Infof("fetching feed from %s", podcast.Feed)
 	// Load the podcast, figure out what's going on
 	fp := gofeed.NewParser()
 	feed, err := fp.ParseURL(podcast.Feed)
 	if err != nil {
 		log.Errorf("could not parse feed: %s", podcast.Feed)
 	}
-
+	log.Infof("synchronizing %s", feed.Title)
 	// Update any new episodes
 	for _, item := range feed.Items {
 		// do we have the episode?
@@ -106,6 +107,7 @@ func (podcast *Podcast) Sync(config Config) error {
 	countToDownload := config.DefaultCountToKeep - countOfExistingFiles
 	for _, episode := range orderedEpisodes {
 		if episode.State == New && countToDownload > 0 {
+			log.Infof("downloading %s", episode.Filename)
 			err = episode.Download(path.Join(podcast.Directory, episode.Filename))
 			if err == nil {
 				episode.State = Downloaded

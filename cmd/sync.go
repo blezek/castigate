@@ -49,7 +49,7 @@ func Sync(cmd *cobra.Command, args []string) {
 		log.Debugf("found podcast: %#v", spew.Sdump(podcast))
 	}
 	log.Infof("saving backup to %s", configFile+".bak")
-	err = os.WriteFile(configFile+".bak", buffer, 0644)
+	err = os.WriteFile(configFile+".bak", b, 0644)
 	if err != nil {
 		log.Fatalf("failed to write backup config: %s", err)
 	}
