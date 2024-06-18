@@ -1,4 +1,4 @@
-package castigate
+package feed
 
 type Config struct {
 	Podcasts           []*Podcast

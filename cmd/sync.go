@@ -5,7 +5,7 @@ This file is part of a CLI application.
 package cmd
 
 import (
-	"castigate/castigate"
+	"castigate/feed"
 	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -27,15 +27,18 @@ to quickly create a Cobra application.`,
 }
 
 func Sync(cmd *cobra.Command, args []string) {
-	configFile := args[0]
+	configFile, err := cmd.Flags().GetString("config")
+	if err != nil {
+		log.Fatalf("could not get config file: %v", err)
+	}
 	log.Infof("loading %s", configFile)
 	// read the yaml file
 	b, err := os.ReadFile(args[0])
 	if err != nil {
 		log.Fatalf("failed to read input: %s", err)
 	}
-	config := castigate.Config{
-		Podcasts:           make([]*castigate.Podcast, 0),
+	config := feed.Config{
+		Podcasts:           make([]*feed.Podcast, 0),
 		FilenameTemplate:   `{{.episode.Date.Format "2006-01-02-15:04:05" }}-{{.item.Title}}.mp3`,
 		DefaultCountToKeep: 10,
 	}
@@ -66,6 +69,7 @@ func Sync(cmd *cobra.Command, args []string) {
 func init() {
 	rootCmd.AddCommand(syncCmd)
 
+	syncCmd.Flags().StringP("config", "c", "config.yaml", "path to config file")
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command

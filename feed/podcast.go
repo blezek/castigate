@@ -1,8 +1,9 @@
-package castigate
+package feed
 
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"github.com/mmcdole/gofeed"
 	log "github.com/sirupsen/logrus"
 	"os"
@@ -105,6 +106,7 @@ func (podcast *Podcast) Sync(config Config) error {
 
 	// loop through and download what we can
 	countToDownload := config.DefaultCountToKeep - countOfExistingFiles
+	log.Infof("downloading %d episodes", countToDownload)
 	for _, episode := range orderedEpisodes {
 		if episode.State == New && countToDownload > 0 {
 			log.Infof("downloading %s", episode.Filename)
@@ -115,6 +117,17 @@ func (podcast *Podcast) Sync(config Config) error {
 			} else {
 				log.Errorf("could not download episode %s from %s: %s", episode.Filename, episode.URL, err)
 			}
+		}
+	}
+	// save an m3u file
+	fid, err := os.Create(path.Join(podcast.Directory, fmt.Sprintf("%s.m3u", feed.Title)))
+	if err != nil {
+		fmt.Errorf("could not create the playlist: %s", err)
+	}
+	defer fid.Close()
+	for _, episode := range orderedEpisodes {
+		if episode.State == Downloaded {
+			_, err = fid.WriteString(episode.Filename + "\n")
 		}
 	}
 
