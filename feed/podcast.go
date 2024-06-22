@@ -14,6 +14,7 @@ import (
 )
 
 type Podcast struct {
+	Label       string
 	Feed        string
 	Directory   string
 	CountToKeep int
@@ -40,9 +41,13 @@ func IsDirectory(path string) (bool, error) {
 	}
 	return fileInfo.IsDir(), nil
 }
+
 func (podcast *Podcast) Sync(config Config) error {
 	if podcast.Episodes == nil {
-		podcast.Episodes = make(map[string]*Episode)
+		podcast.Episodes = make(map[string]*Episode, 0)
+	}
+	if podcast.Label == "" {
+		podcast.Label = path.Base(podcast.Directory)
 	}
 	if podcast.Start == "" {
 		podcast.Start = "oldest"
@@ -55,6 +60,7 @@ func (podcast *Podcast) Sync(config Config) error {
 		log.Errorf("could not parse feed: %s", podcast.Feed)
 	}
 	log.Infof("synchronizing %s", feed.Title)
+
 	// Update any new episodes
 	for _, item := range feed.Items {
 		// do we have the episode?

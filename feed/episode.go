@@ -20,15 +20,16 @@ const (
 )
 
 type Episode struct {
-	GUID     string
-	URL      string
-	State    EpisodeState
-	Filename string
-	Date     time.Time
+	GUID         string
+	URL          string
+	State        EpisodeState
+	Filename     string
+	Date         time.Time
+	PodcastLabel string
 }
 
 func (episode Episode) String() string {
-	return fmt.Sprintf("GUID: %s\nURL: %s\nState: %s\nFilename: %s\nDate: %s",
+	return fmt.Sprintf("GUID: %s\nURL: %s\nState: %v\nFilename: %s\nDate: %s",
 		episode.GUID, episode.URL, episode.State, episode.Filename, episode.Date)
 }
 
