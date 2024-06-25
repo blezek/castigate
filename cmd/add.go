@@ -52,7 +52,7 @@ func runAddCmd(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 	}
-	log.Infof("adding podcast: %s with feed %s to %d directory", label, url, directory)
+	log.Infof("adding podcast: %s with feed %s to %s directory", label, url, directory)
 	config.Podcasts = append(config.Podcasts, &feed.Podcast{
 		Label:       label,
 		Feed:        url,
