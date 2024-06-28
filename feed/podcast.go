@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"text/template"
 	"time"
@@ -130,13 +131,15 @@ func (podcast *Podcast) Sync(config Config, configFilePath string) error {
 	if podcast.CountToKeep > 0 {
 		countToKeep = podcast.CountToKeep
 	}
+	re := regexp.MustCompile(`[^A-Za-z0-9_\-\.]`)
 	countToDownload := countToKeep - countOfExistingFiles
 	log.Infof("downloading %d episodes", countToDownload)
 	for _, episode := range orderedEpisodes {
 		if episode.State == New && countToDownload > 0 {
-			log.Infof("downloading %s", episode.Filename)
 			path.Base(configFilePath)
-			err = episode.Download(path.Join(podcastDirectory, episode.Filename))
+			fn := re.ReplaceAllString(episode.Filename, "-")
+			log.Infof("downloading %s to %s", episode.Filename, fn)
+			err = episode.Download(path.Join(podcastDirectory, fn))
 			if err == nil {
 				episode.State = Downloaded
 				countToDownload--
