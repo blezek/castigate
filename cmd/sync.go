@@ -8,6 +8,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"path/filepath"
 )
 
 // syncCmd represents the sync command
@@ -24,7 +25,7 @@ var syncCmd = &cobra.Command{
 func Sync(cmd *cobra.Command, args []string) {
 	backend, config := LoadConfiguration(cmd)
 	for _, podcast := range config.Podcasts {
-		podcast.Sync(config)
+		podcast.Sync(config, filepath.Dir(backend.Filename))
 		log.Debugf("found podcast: %#v", spew.Sdump(podcast))
 	}
 	backend.Save(config)

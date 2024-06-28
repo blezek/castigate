@@ -17,10 +17,24 @@ var rootCmd = &cobra.Command{
 	Short: "A simple podCAST GATEway application",
 	Long: `castigate or the podCAST GATEway, is a Go project to manage Podcasts for
 portable MP3 players, or simply to download episodes of
-podcasts from the command line.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+podcasts from the command line.  Each podcast has a label and the following settings:
+
+feed:         the URL of the RSS feed for the podcast
+directory:    the directory where the podcast is stored, relative to the config file
+counttokeep:  number of episodes to keep on disk, if 0, use the default configuration
+start:        download the oldest or newest podcasts first, in order
+
+A podcast has a number of episodes.  Each episode goes through three states, new, downloaded, and deleted.
+When an episode appears on the feed, it is added to the podcast in a new state.  If the number of episodes
+in the directory is less than counttokeep, episodes in the new state are downloaded and their state is 
+updated to downloaded.  Finally, when a downloaded episode no longer exists on disk, it is moved to
+the deleted state.
+
+To manage podcasts, run 'castigate sync' to download new episodes from each podcast, and copy to
+an MP3 player (or wherever).  When an episode has been played, simply delete it from the directory
+and run 'castigate sync' to retrieve any new episodes.
+`,
+
 	PersistentPreRun: PreRunRoot,
 }
 
@@ -31,12 +45,6 @@ func PreRunRoot(cmd *cobra.Command, args []string) {
 	if debug {
 		log.SetLevel(log.DebugLevel)
 	}
-	//backend, _ := cmd.Flags().GetString("backend")
-	//if backend == "db" {
-	//	Backend = &feed.SqliteBackend{}
-	//} else {
-	//	Backend = &feed.FileBackend{}
-	//}
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -57,14 +65,8 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.castigate.yaml)")
 	rootCmd.PersistentFlags().StringP("config", "c", "castigate.yaml", "path to config file")
-	//rootCmd.PersistentFlags().StringP("backend", "e", "db", "backend configuration, should be 'db' or 'yaml'")
 	rootCmd.PersistentFlags().BoolP("debug", "d", false, "set logging to debug")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func LoadConfiguration(cmd *cobra.Command) (feed.FileBackend, feed.Config) {

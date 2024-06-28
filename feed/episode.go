@@ -23,6 +23,7 @@ type Episode struct {
 	GUID         string
 	URL          string
 	State        EpisodeState
+	Title        string
 	Filename     string
 	Date         time.Time
 	PodcastLabel string

@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path"
+	"path/filepath"
 	"sort"
 	"text/template"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 type Podcast struct {
 	Label       string
+	Title       string
 	Feed        string
 	Directory   string
 	CountToKeep int
@@ -42,7 +44,7 @@ func IsDirectory(path string) (bool, error) {
 	return fileInfo.IsDir(), nil
 }
 
-func (podcast *Podcast) Sync(config Config) error {
+func (podcast *Podcast) Sync(config Config, configFilePath string) error {
 	if podcast.Episodes == nil {
 		podcast.Episodes = make(map[string]*Episode, 0)
 	}
@@ -58,8 +60,11 @@ func (podcast *Podcast) Sync(config Config) error {
 	feed, err := fp.ParseURL(podcast.Feed)
 	if err != nil {
 		log.Errorf("could not parse feed: %s", podcast.Feed)
+		log.Errorf("skipping podcast '%s'", podcast.Label)
+		return err
 	}
 	log.Infof("synchronizing %s", feed.Title)
+	podcast.Title = feed.Title
 
 	// Update any new episodes
 	for _, item := range feed.Items {
@@ -76,6 +81,7 @@ func (podcast *Podcast) Sync(config Config) error {
 				GUID:     item.GUID,
 				URL:      audioFileURL,
 				State:    New,
+				Title:    item.Title,
 				Filename: "",
 				Date:     t,
 			}
@@ -110,13 +116,27 @@ func (podcast *Podcast) Sync(config Config) error {
 		}
 	})
 
+	podcastDirectory := podcast.Directory
+	if !filepath.IsAbs(podcastDirectory) {
+		absPath, err := filepath.Abs(configFilePath)
+		if err != nil {
+			log.Fatalf("could not get absolute path of %s", configFilePath)
+		}
+		podcastDirectory = filepath.Join(absPath, podcastDirectory)
+	}
+	log.Debugf("podcast directory is %s", podcastDirectory)
 	// loop through and download what we can
-	countToDownload := config.DefaultCountToKeep - countOfExistingFiles
+	countToKeep := config.DefaultCountToKeep
+	if podcast.CountToKeep > 0 {
+		countToKeep = podcast.CountToKeep
+	}
+	countToDownload := countToKeep - countOfExistingFiles
 	log.Infof("downloading %d episodes", countToDownload)
 	for _, episode := range orderedEpisodes {
 		if episode.State == New && countToDownload > 0 {
 			log.Infof("downloading %s", episode.Filename)
-			err = episode.Download(path.Join(podcast.Directory, episode.Filename))
+			path.Base(configFilePath)
+			err = episode.Download(path.Join(podcastDirectory, episode.Filename))
 			if err == nil {
 				episode.State = Downloaded
 				countToDownload--
