@@ -5,6 +5,7 @@ This file is part of a CLI application.
 package cmd
 
 import (
+	"castigate/feed"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 
@@ -24,8 +25,27 @@ func RunListCmd(cmd *cobra.Command, args []string) {
 	_, config := LoadConfiguration(cmd)
 	log.Debugf("Loaded configuration: %v", config)
 	for _, podcast := range config.Podcasts {
-		fmt.Printf("Label: %s\nFeed: %s\nDirection: %s\nNumber of Episodes: %d\n\n",
+		fmt.Printf("Title: %s\n", podcast.Title)
+		fmt.Printf("Label: %s\nFeed: %s\nDirection: %s\nNumber of Episodes: %d\n",
 			podcast.Label, podcast.Feed, podcast.Start, len(podcast.Episodes))
+		countOfDownloaded := 0
+		countOfNew := 0
+		countOfDeleted := 0
+		for _, episode := range podcast.Episodes {
+			if episode.State == feed.Downloaded {
+				countOfDownloaded++
+			}
+			if episode.State == feed.New {
+				countOfNew++
+			}
+			if episode.State == feed.Deleted {
+				countOfDeleted++
+			}
+		}
+		fmt.Printf("\tDownloaded: %d\n", countOfDownloaded)
+		fmt.Printf("\tNew: %d\n", countOfNew)
+		fmt.Printf("\tDeleted: %d\n", countOfDeleted)
+		fmt.Printf("\n")
 	}
 }
 

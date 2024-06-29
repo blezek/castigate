@@ -11,6 +11,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const DefaultFilenameTemplate = `{{.episode.Date.Format "2006-01-02-15-04-05" }}-{{.episode.Title}}.mp3`
+
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
@@ -45,6 +47,6 @@ func runInitCmd(cmd *cobra.Command, args []string) {
 
 func init() {
 	rootCmd.AddCommand(initCmd)
-	initCmd.Flags().StringP("template", "t", `{{.episode.Date.Format "2006-01-02-15-04-05" }}-{{.episode.Title}}.mp3`, "template for filenames")
+	initCmd.Flags().StringP("template", "t", DefaultFilenameTemplate, "template for filenames")
 	initCmd.Flags().Int("count", 10, "number of episodes to keep by default")
 }

@@ -31,7 +31,7 @@ func runEditCmd(cmd *cobra.Command, args []string) {
 	log.Infof("editing label %s: %s", label, podcast.Title)
 	url, err := cmd.Flags().GetString("url")
 	if err != nil {
-		log.Fatal("could not get url flag %v", err)
+		log.Fatalf("could not get url flag %v", err)
 	}
 	if url != "" {
 		podcast.Feed = url
@@ -39,7 +39,7 @@ func runEditCmd(cmd *cobra.Command, args []string) {
 
 	count, err := cmd.Flags().GetInt("count")
 	if err != nil {
-		log.Fatal("could not get count flag %v", err)
+		log.Fatalf("could not get count flag %v", err)
 	}
 	if count >= 0 {
 		podcast.CountToKeep = count
@@ -47,7 +47,7 @@ func runEditCmd(cmd *cobra.Command, args []string) {
 
 	directory, err := cmd.Flags().GetString("directory")
 	if err != nil {
-		log.Fatal("could not get directory flag %v", err)
+		log.Fatalf("could not get directory flag %v", err)
 	}
 	if directory != "" {
 		podcast.Directory = directory
@@ -55,7 +55,7 @@ func runEditCmd(cmd *cobra.Command, args []string) {
 
 	start, err := cmd.Flags().GetString("start")
 	if err != nil {
-		log.Fatal("could not get start flag %v", err)
+		log.Fatalf("could not get start flag %v", err)
 	}
 	if start != "" {
 		if start == "oldest" {
