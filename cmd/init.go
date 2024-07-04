@@ -11,8 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const DefaultFilenameTemplate = `{{.episode.Date.Format "2006-01-02-15-04-05" }}-{{.episode.Title}}.mp3`
-
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
@@ -31,11 +29,10 @@ func runInitCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("error reading count flag: %v", err)
 	}
-	config := feed.Config{
-		Podcasts:           nil,
-		FilenameTemplate:   filenameTemplate,
-		DefaultCountToKeep: count,
-	}
+	config := feed.NewConfig()
+	config.FilenameTemplate = filenameTemplate
+	config.DefaultCountToKeep = count
+
 	configFile, err := cmd.Flags().GetString("config")
 	if err != nil {
 		log.Fatalf("could not get config file: %v", err)
@@ -47,6 +44,6 @@ func runInitCmd(cmd *cobra.Command, args []string) {
 
 func init() {
 	rootCmd.AddCommand(initCmd)
-	initCmd.Flags().StringP("template", "t", DefaultFilenameTemplate, "template for filenames")
+	initCmd.Flags().StringP("template", "t", feed.DefaultFilenameTemplate, "template for filenames")
 	initCmd.Flags().Int("count", 10, "number of episodes to keep by default")
 }

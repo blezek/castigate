@@ -95,7 +95,7 @@ func TestGetFeed(t *testing.T) {
 				Episodes:    nil,
 			},
 		},
-		FilenameTemplate:   DefaultFilenameTemplate,
+		FilenameTemplate:   feed.DefaultFilenameTemplate,
 		DefaultCountToKeep: 10,
 	}
 	podcast := config.Podcasts[0]

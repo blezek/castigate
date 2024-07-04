@@ -66,20 +66,12 @@ func runEditCmd(cmd *cobra.Command, args []string) {
 	}
 	log.Infof("saving configuration")
 	backend.Save(config)
-	//state, err := cmd.Flags().GetString("state")
-	//if err != nil {
-	//	log.Fatal("could not get state flag %v", err)
-	//}
-	//if state != "" {
-	//	podcast.
-	//}
-
 }
+
 func init() {
 	rootCmd.AddCommand(editCmd)
 	editCmd.Flags().String("url", "", "URL of the podcast")
 	editCmd.Flags().Int("count", -1, "Number of episodes to keep on disk")
 	editCmd.Flags().String("directory", "", "Directory of the podcast")
-	//editCmd.Flags().StringP("state", "s", "", "reset state of all podcast episodes, must be one of: new, downloaded, deleted")
 	editCmd.Flags().String("start", "", "download starting with oldest or newest")
 }

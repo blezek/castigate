@@ -7,8 +7,6 @@ package cmd
 import (
 	"castigate/feed"
 	log "github.com/sirupsen/logrus"
-	"os"
-
 	"github.com/spf13/cobra"
 )
 
@@ -46,12 +44,12 @@ func runAddCmd(cmd *cobra.Command, args []string) {
 		directory = args[2]
 	}
 	// check the label does not exist
-	for _, podcast := range config.Podcasts {
-		if podcast.Label == label {
-			log.Errorf("a podcast with label %s already exists (for URL %s)", label, podcast.Feed)
-			os.Exit(1)
-		}
+	podcast, err := config.FindPodcast(label)
+	if podcast != nil {
+		log.Errorf("a podcast with label %s already exists (for URL %s)", label, podcast.Feed)
+		return
 	}
+
 	log.Infof("adding podcast: %s with feed %s to %s directory", label, url, directory)
 	config.Podcasts = append(config.Podcasts, &feed.Podcast{
 		Label:       label,

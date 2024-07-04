@@ -197,6 +197,21 @@ func (podcast *Podcast) FormatFilename(filenameTemplate string, episode *Episode
 	return buffer.String()
 }
 
+func (podcast *Podcast) PrintDetails() string {
+	buffer := bytes.NewBufferString("")
+	fmt.Fprintf(buffer, "Title: %s\n", podcast.Title)
+	fmt.Fprintf(buffer, "Label: %s\nFeed: %s\nDirection: %s\nNumber of Episodes: %d\n",
+		podcast.Label, podcast.Feed, podcast.Start, len(podcast.Episodes))
+	countOfDownloaded := podcast.GetDownloadedCount()
+	countOfNew := podcast.GetNewCount()
+	countOfDeleted := podcast.GetDeletedCount()
+	fmt.Fprintf(buffer, "\tDownloaded: %d\n", countOfDownloaded)
+	fmt.Fprintf(buffer, "\tNew: %d\n", countOfNew)
+	fmt.Fprintf(buffer, "\tDeleted: %d\n", countOfDeleted)
+	fmt.Fprintf(buffer, "\n")
+	return buffer.String()
+}
+
 func (podcast *Podcast) GetNewCount() int {
 	counter := 0
 	for _, episode := range podcast.Episodes {
