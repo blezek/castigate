@@ -2,6 +2,7 @@ package feed
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"github.com/mmcdole/gofeed"
@@ -92,15 +93,14 @@ func (podcast *Podcast) Sync(config Config, configFilePath string) error {
 	if podcast.CountToKeep > 0 {
 		countToKeep = podcast.CountToKeep
 	}
-	re := regexp.MustCompile(`[^A-Za-z0-9_\-\.]`)
 	countToDownload := countToKeep - countOfExistingFiles
 	log.Infof("downloading %d episodes", countToDownload)
 	for _, episode := range orderedEpisodes {
 		if episode.State == New && countToDownload > 0 {
 			path.Base(configFilePath)
-			fn := re.ReplaceAllString(episode.Filename, "-")
-			log.Infof("downloading %s to %s from %s", episode.Filename, fn, episode.URL)
-			err = episode.Download(path.Join(podcastDirectory, fn))
+
+			log.Infof("downloading %s from %s", episode.Filename, episode.URL)
+			err = episode.Download(path.Join(podcastDirectory, episode.Filename))
 			if err == nil {
 				episode.State = Downloaded
 				countToDownload--
@@ -111,6 +111,8 @@ func (podcast *Podcast) Sync(config Config, configFilePath string) error {
 	}
 	// save an m3u file
 	playlistFilename := fmt.Sprintf("%s.m3u", feed.Title)
+	re := regexp.MustCompile(`[^A-Za-z0-9_\-\.]`)
+
 	playlistFilename = re.ReplaceAllString(playlistFilename, "-")
 	fid, err := os.Create(path.Join(podcast.Directory, playlistFilename))
 	if err != nil {
@@ -155,14 +157,21 @@ func (podcast *Podcast) UpdateFromRSS(config Config) (*gofeed.Feed, error) {
 
 	// Update any new episodes
 	for _, item := range feed.Items {
+		// construct the episode
+		var audioFileURL string
+		for _, item := range item.Enclosures {
+			// TODO: Need to make sure it's an audio link
+			audioFileURL = item.URL
+		}
+		if item.GUID == "" {
+			h := sha256.New()
+			h.Write([]byte(audioFileURL))
+			item.GUID = fmt.Sprintf("%x", h.Sum(nil))
+		}
+
 		// do we have the episode?
 		if podcast.Episodes[item.GUID] == nil {
-			// construct the episode
-			var audioFileURL string
-			for _, item := range item.Enclosures {
-				// TODO: Need to make sure it's an audio link
-				audioFileURL = item.URL
-			}
+
 			t, _ := time.Parse(time.RFC1123Z, item.Published)
 			episode := &Episode{
 				GUID:     item.GUID,
@@ -194,7 +203,10 @@ func (podcast *Podcast) FormatFilename(filenameTemplate string, episode *Episode
 	if err != nil {
 		log.Errorf("could not execute filename template: %s", err)
 	}
-	return buffer.String()
+	re := regexp.MustCompile(`[^A-Za-z0-9_\-\.]`)
+	fn := re.ReplaceAllString(buffer.String(), "-")
+	log.Debugf("replacing bad characters in %s, now %s", buffer.String(), fn)
+	return fn
 }
 
 func (podcast *Podcast) PrintDetails() string {

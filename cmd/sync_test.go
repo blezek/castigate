@@ -3,25 +3,59 @@ package cmd
 import (
 	"castigate/feed"
 	"errors"
-	log "github.com/sirupsen/logrus"
+	"fmt"
+	"github.com/gorilla/feeds"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
+	"time"
 )
 
 func GetRSS(url string, t *testing.T) string {
-	wd, _ := os.Getwd()
-	log.Infof("in directory %s", wd)
-	buffer, err := os.ReadFile("./testdata/test.rss")
-	if err != nil {
-		t.Fatalf("could not read test.rss: %v", err)
+
+	rss := feeds.Feed{
+		Title:       "test",
+		Link:        &feeds.Link{Href: url + "/rss"},
+		Description: "test",
+		Author:      nil,
+		Updated:     time.Time{},
+		Created:     time.Time{},
+		Id:          "1234",
+		Subtitle:    "subtitle",
+		Items:       make([]*feeds.Item, 0),
+		Copyright:   "copyright me 2024",
+		Image:       nil,
 	}
-	s := string(buffer)
-	return strings.ReplaceAll(s, ":url:", url)
+	startDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	for count := 0; count < 100; count++ {
+		episode := fmt.Sprintf("episode-%03d", count)
+		itemUrl := url + fmt.Sprintf("/asset/%s.mp3", episode)
+		link := &feeds.Link{Href: itemUrl}
+		enclosure := &feeds.Enclosure{
+			Url:    itemUrl,
+			Length: "0",
+			Type:   "audio/mpeg",
+		}
+		rssItem := &feeds.Item{
+			Title:       episode + fmt.Sprintf(" this is episode #%d", count),
+			Link:        link,
+			Description: episode,
+			Id:          episode,
+			Updated:     startDate,
+			Created:     startDate,
+			Enclosure:   enclosure,
+		}
+		rss.Add(rssItem)
+		startDate = startDate.AddDate(0, 0, 1)
+	}
+	rssText, err := rss.ToRss()
+	if err != nil {
+		t.Fatalf("convert feed to RSS: %v", err)
+	}
+	return rssText
 }
 
 func CreateTestServer(t *testing.T) *httptest.Server {
@@ -103,8 +137,8 @@ func TestGetFeed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not sync podcast: %v", err)
 	}
-	if podcast.GetNewCount() != 118 {
-		t.Errorf("expected 118 got %d", podcast.GetNewCount())
+	if podcast.GetNewCount() != 90 {
+		t.Errorf("expected 90 got %d", podcast.GetNewCount())
 	}
 	if podcast.GetDownloadedCount() != 10 {
 		t.Errorf("expected 10 got %d", podcast.GetDownloadedCount())
@@ -113,16 +147,16 @@ func TestGetFeed(t *testing.T) {
 		t.Errorf("expected 0 got %d", podcast.GetDeletedCount())
 	}
 	filenames := []string{
-		"2022-01-18-05-01-00-124.-Biblical-Theology.mp3",
-		"2022-01-25-05-01-00-21.-The-Intermediate-State.mp3",
-		"2022-02-01-05-01-00-125.-Theophany-and-Christophany.mp3",
-		"2022-02-08-05-01-00-22.-Amillennialism.mp3",
-		"2022-02-15-05-01-00-126.-Adonai.mp3",
-		"2022-02-22-05-01-00-23.-Assurance-of-Salvation.mp3",
-		"2022-03-01-05-01-00-127.-Preterism.mp3",
-		"2022-03-08-05-01-00-24.-Angels.mp3",
-		"2022-03-15-04-01-00-128.-Universalism-and-Hell.mp3",
-		"2022-03-22-04-01-00-25.-Repentance.mp3",
+		"2020-01-01-00-00-00-episode-000-this-is-episode--0.mp3",
+		"2020-01-02-00-00-00-episode-001-this-is-episode--1.mp3",
+		"2020-01-03-00-00-00-episode-002-this-is-episode--2.mp3",
+		"2020-01-04-00-00-00-episode-003-this-is-episode--3.mp3",
+		"2020-01-05-00-00-00-episode-004-this-is-episode--4.mp3",
+		"2020-01-06-00-00-00-episode-005-this-is-episode--5.mp3",
+		"2020-01-07-00-00-00-episode-006-this-is-episode--6.mp3",
+		"2020-01-08-00-00-00-episode-007-this-is-episode--7.mp3",
+		"2020-01-09-00-00-00-episode-008-this-is-episode--8.mp3",
+		"2020-01-10-00-00-00-episode-009-this-is-episode--9.mp3",
 	}
 	for _, filename := range filenames {
 		if !FileExists(filepath.Join(dir, filename)) {
@@ -130,6 +164,23 @@ func TestGetFeed(t *testing.T) {
 		}
 	}
 
+	// sync again checking to see if we download more
+	err = podcast.Sync(config, "")
+	if err != nil {
+		t.Fatalf("could not sync podcast: %v", err)
+	}
+	for _, filename := range filenames {
+		if !FileExists(filepath.Join(dir, filename)) {
+			t.Errorf("missing file %s", filepath.Join(dir, filename))
+		}
+	}
+	downloadedFiles, err := filepath.Glob(dir + "/*.mp3")
+	if err != nil {
+		t.Errorf("can not find files is %s: %v", dir, err)
+	}
+	if len(downloadedFiles) != 10 {
+		t.Errorf("expected 10 got %d downloaded files in %s", len(downloadedFiles), dir)
+	}
 	// delete a few and retry
 	for _, filename := range filenames[:4] {
 		os.Remove(filepath.Join(dir, filename))
@@ -139,8 +190,8 @@ func TestGetFeed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not sync podcast: %v", err)
 	}
-	if podcast.GetNewCount() != 118 {
-		t.Errorf("expected 118 got %d", podcast.GetNewCount())
+	if podcast.GetNewCount() != 90 {
+		t.Errorf("expected 90 got %d", podcast.GetNewCount())
 	}
 	if podcast.GetDownloadedCount() != 10 {
 		t.Errorf("expected 10 got %d", podcast.GetDownloadedCount())
@@ -153,14 +204,14 @@ func TestGetFeed(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not sync podcast: %v", err)
 	}
-	if podcast.GetNewCount() != 108 {
-		t.Errorf("expected 108 got %d", podcast.GetNewCount())
+	if podcast.GetNewCount() != 86 {
+		t.Errorf("expected 86 got %d", podcast.GetNewCount())
 	}
 	if podcast.GetDownloadedCount() != 10 {
 		t.Errorf("expected 10 got %d", podcast.GetDownloadedCount())
 	}
-	if podcast.GetDeletedCount() != 10 {
-		t.Errorf("expected 10 got %d", podcast.GetDeletedCount())
+	if podcast.GetDeletedCount() != 4 {
+		t.Errorf("expected 4 deleted got %d", podcast.GetDeletedCount())
 	}
 }
 
